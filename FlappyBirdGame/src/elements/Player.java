@@ -17,20 +17,20 @@ public class Player {
 	}
 	
 	public void incrementHighestScore(int highestScore) {
-		File file = new File("C:\\Users\\talsh\\OneDrive\\Desktop\\Flash Drive Backup\\Amal B Computer Programming 14th Grade\\Mario\\Project\\FlappyBirdGame\\Files\\players.txt");
-		File tempFile = new File("C:\\Users\\talsh\\OneDrive\\Desktop\\Flash Drive Backup\\Amal B Computer Programming 14th Grade\\Mario\\Project\\FlappyBirdGame\\Files\\fileTemp.txt");
+		File file = new File("./Files/players.txt");
+		File tempFile = new File("./Files/fileTemp.txt");
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(file));
 			BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
 			
 			String lineToRemove = this.getName() + " " + this.getScore();
 			String currentLine;
+			this.highestScore = highestScore;
 			
 			while((currentLine = reader.readLine()) != null) {
 				currentLine.trim();
 				if(currentLine.equals(lineToRemove)) {
-					this.highestScore = highestScore;
-					writer.write(this.getName() + " " + this.getScore() + System.getProperty("line.separator"));
+					writer.write(this.getName() + " " + this.highestScore);
 					continue;
 				}
 				writer.write(currentLine + System.getProperty("line.separator"));

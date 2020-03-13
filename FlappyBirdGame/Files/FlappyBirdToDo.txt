@@ -1,0 +1,7 @@
+Things to take care of in FlappyBirdGame:
+
+- Make the code efficient, less stress on CPU when repainting.
+- Organize the code, remove unnecessary code chunks, white spaces and add comments.
+- Add a PAUSE page in the game when user presses 'p'.
+- Change where the coins spawn, so they don't spawn on top of the mines, but fairly close to them.
+- Add another warning so that users can't enter an empty string as a user name.

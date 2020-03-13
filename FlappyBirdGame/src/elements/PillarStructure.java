@@ -4,7 +4,6 @@ import java.awt.Graphics;
 import java.awt.Image;
 import javax.swing.ImageIcon;
 
-
 public class PillarStructure{
 	
 	private int bottomY, upperY;
@@ -18,9 +17,12 @@ public class PillarStructure{
 	private int upperHeight;
 	private int bottomHeight;
 	
+	private boolean isPassed;
+
 	public PillarStructure() {
 		ImageIcon bic = new ImageIcon("./Images/pillar.png");
 		pillarImage = bic.getImage();
+		this.isPassed = false;
 		
 		initRectangles();
 	}
@@ -38,8 +40,7 @@ public class PillarStructure{
 		// 720 - 200 - 150 = 370 // maximum height for upper pillar, 150 minimum height for upper pillar
 		this.bottomHeight = (int) Math.round((Math.random() * ((370 - 150) + 1)) + 150); 
 		// Open Space for Bird to go through is 200px, minimum height size for a pillar is 150px
-		/*this.bottomRect.setSize(PillarStructure.pillarX, pillarY); // Sizes are negative because the rectangle needs to be upside down
-		this.upperRect.setSize(PillarStructure.pillarX, 720 - pillarY - 200);*/
+		// Sizes are negative because the rectangle needs to be upside down
 		this.bottomY = 720 - bottomHeight; // Y position where upper pillar is drawn
 		this.upperHeight = 720 - bottomHeight - 200;
 		this.upperY = 0 - (PillarStructure.pillarHeight - upperHeight); // Y position where bottom pillar is drawn
@@ -66,7 +67,6 @@ public class PillarStructure{
 	}
 
 	public void drawPillar(Graphics g) {
-		
 		g.drawImage(this.pillarImage, 1280 - this.distance, this.upperY + PillarStructure.pillarHeight, PillarStructure.pillarWidth, -PillarStructure.pillarHeight, null);// Upper Pillar
 		g.drawImage(this.pillarImage, 1280 - this.distance, this.bottomY, PillarStructure.pillarWidth, PillarStructure.pillarHeight, null);// Bottom Pillar
 	}
@@ -97,5 +97,13 @@ public class PillarStructure{
 
 	public void setDistance(int distance) {
 		this.distance = distance;
+	}
+	
+	public boolean isPassed() {
+		return isPassed;
+	}
+
+	public void setPassed(boolean isPassed) {
+		this.isPassed = isPassed;
 	}
 }

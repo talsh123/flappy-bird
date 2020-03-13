@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Scanner;
-
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
@@ -37,14 +36,15 @@ import javax.swing.Timer;
 @SuppressWarnings("serial")
 public class Board extends JPanel implements ActionListener{
 	
-	// Board Attributes
+	// Board Dimensions
 	public static final int B_WIDTH = 1280;
 	public static final int B_HEIGHT = 720;
 	
-	private int currentScore = 0;
+	// Player Score
+	private static int currentScore = 0;
 	
-	//Universal Elements
-	static Bird bird;
+	// Universal Elements
+	private static Bird bird;
 	
 	private static enum UserState 
 	{
@@ -52,16 +52,17 @@ public class Board extends JPanel implements ActionListener{
 		IN_GAME, MAIN_MENU, RETRY_PAGE
 	}
 	
-	private UserState userState;
+	private static UserState userState;
 	
-	private StylizedButton retryButton;
-	private StylizedButton mainMenuButton;
-	private StylizedButton logOutButton;
+	private static PlayButton playButton;
+	private static StylizedButton retryButton;
+	private static StylizedButton mainMenuButton;
+	private static StylizedButton logOutButton;
 	
-	private Player currentPlayer = null;
-	private boolean loggedIn = false;
+	private static Player currentPlayer = null;
+	private static boolean loggedIn = false;
 	
-	private List<Player> players;
+	private static List<Player> players;
 	private static List<Background> backgroundImages;
 	public static List<PillarStructure> pillars;
 	public static List<Mine> mines;
@@ -79,9 +80,6 @@ public class Board extends JPanel implements ActionListener{
 	private Timer impactEffectTimer; // Timer which fades in and out the color black of the JPanel to simulate impact
 	private Timer mineTimer; // Timer which checks if the mine is out of the panel borders, and if so kills it
 	private Timer coinTimer; //Timer which checks when the coin is out of the panel borders, if so kills it
-	
-	// Main Menu Attributes
-	private static PlayButton playButton = new PlayButton(540, 250);
 	
 	public Board(){
 		super();
@@ -101,52 +99,21 @@ public class Board extends JPanel implements ActionListener{
 		initMenu(); 
 	}
 	
-	private void initPlayers() {
-		// Fetching written information over existing players
-		players = new ArrayList<>();
-		currentPlayer = null;
-		File file = new File("C:\\Users\\talsh\\OneDrive\\Desktop\\Flash Drive Backup\\Amal B Computer Programming 14th Grade\\Mario\\Project\\FlappyBirdGame\\Files\\players.txt");
-		try {
-			Scanner sc = new Scanner(file);
-			while(sc.hasNextLine()) {
-				String[] playerInfo = sc.nextLine().split(" ");
-				players.add(new Player(playerInfo[0], Integer.parseInt(playerInfo[1])));
-			}
-			sc.close();
-		} catch (FileNotFoundException e) {
-
-			e.printStackTrace();
-		}
-	}
-	
-	private void updatePlayers() {
-		currentPlayer = null;
-		players.clear();
-		File file = new File("C:\\Users\\talsh\\OneDrive\\Desktop\\Flash Drive Backup\\Amal B Computer Programming 14th Grade\\Mario\\Project\\FlappyBirdGame\\Files\\players.txt");
-		try {
-			Scanner sc = new Scanner(file);
-			while(sc.hasNextLine()) {
-				String[] playerInfo = sc.nextLine().split(" ");
-				players.add(new Player(playerInfo[0], Integer.parseInt(playerInfo[1])));
-			}
-			sc.close();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-	}
-
 	private void initButtons() {
 		// Setting up buttons for retry page
-		this.retryButton = new StylizedButton();
-		this.mainMenuButton = new StylizedButton();
-		this.logOutButton = new StylizedButton();
+		Board.retryButton = new StylizedButton();
+		Board.mainMenuButton = new StylizedButton();
+		Board.logOutButton = new StylizedButton();
+		// Setting up buttons for main menu page
+		Board.playButton = new PlayButton(540, 250);
 	}
-
+	
 	private void initArrays() {
 		Board.backgroundImages = new ArrayList<>();
 		Board.pillars = new ArrayList<>();
 		Board.mines = new ArrayList<>();
 		Board.coins = new ArrayList<>();
+		Board.players = new ArrayList<>();
 	}
 
 	private void initTimers() {
@@ -158,7 +125,6 @@ public class Board extends JPanel implements ActionListener{
 				playButton.changeButtonPosition();
 				repaint();
 			}
-			
 		});
 		playButtonTimer.setInitialDelay(0);
 		
@@ -180,9 +146,10 @@ public class Board extends JPanel implements ActionListener{
 		
 		// Timer to create a looping pillars 
 		this.pillarTimer = new Timer(1, new ActionListener() {
+			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// 4 pixels, first movement of the pillar, gets in jpanel
+				// 4 pixels, first movement of the pillar, gets in JPanel
 				if(pillars.get(0).getxPosition() <= 1280 && pillars.get(0).getxPosition() > (1280 / 2)) {
 					if(pillars.get(0).getxPosition() == 1280) {
 						pillars.add(new PillarStructure());
@@ -257,6 +224,7 @@ public class Board extends JPanel implements ActionListener{
 						coins.remove(0);
 					}
 				}
+				repaint();
 			}
 		});
 		coinTimer.setInitialDelay(0);
@@ -280,6 +248,23 @@ public class Board extends JPanel implements ActionListener{
 		});
 		pillarTimer.setInitialDelay(0);
 	}
+	
+	private void initPlayers() {
+		// Fetching written information over existing players
+		currentPlayer = null;
+		Board.players.clear();
+		File file = new File("./Files/players.txt");
+		try {
+			Scanner sc = new Scanner(file);
+			while(sc.hasNextLine()) {
+				String[] playerInfo = sc.nextLine().split(" ");
+				Board.players.add(new Player(playerInfo[0], Integer.parseInt(playerInfo[1])));
+			}
+			sc.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
 
 	private void initMenu() {
 		// Games starts out in Main Menu, thus userState is set to MAIN_MENU
@@ -289,20 +274,32 @@ public class Board extends JPanel implements ActionListener{
 		ImageIcon iib = new ImageIcon("./Images/background.jpg");
 		this.backgroundImage = iib.getImage();
 		
+		// Starts play button timer
 		this.playButtonTimer.restart();
 		
-		if(!Bird.interrupted() && bird != null) {
-			bird.isAlive = false;
-			bird.interrupt();
-		}
-		
 		// Initializes a new static bird (does not start the thread)
-		bird = new Bird(590, 150);
+		Board.bird = new Bird(590, 150);
+		Board.bird.isAlive = false;
+	}
+	
+	private void updatePlayers() {
+		currentPlayer = null;
+		players.clear();
+		File file = new File("./Files/players.txt");
+		try {
+			Scanner sc = new Scanner(file);
+			while(sc.hasNextLine()) {
+				String[] playerInfo = sc.nextLine().split(" ");
+				players.add(new Player(playerInfo[0], Integer.parseInt(playerInfo[1])));
+			}
+			sc.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public void initGame() {
-		// Clearing the arrays
-		// Makes sure that the last position of all elements are drawn before cleaning of the arrays
+		// Clearing the arrays from last try elements
 		Board.backgroundImages.clear();
 		Board.pillars.clear();
 		Board.mines.clear();
@@ -310,10 +307,11 @@ public class Board extends JPanel implements ActionListener{
 		// Adding 2 background Images for simulating looping background
 		Board.backgroundImages.add(new Background(0, 0));
 		Board.backgroundImages.add(new Background(1280, 0));
-		// Adding 2 pillar structure and 1 mines
+		// Adding 2 pillar structure
 		Board.pillars.add(new PillarStructure());
 		Board.pillars.add(new PillarStructure());
 		
+		// Adding 1 mine and 1 coin and starting them
 		mines.add(new Mine(pillars.get(0), pillars.get(1)));
 		mines.get(mines.size() - 1).start();
 		
@@ -334,15 +332,14 @@ public class Board extends JPanel implements ActionListener{
 		// 150px - Height of ground, Rectangle which is a boundary, if bird gets to ground it dies
 		Board.groundRect = new Rectangle(0, 720 - 150, 1280, 150);
 		
-		this.collisionTimer.restart();
-		
+		this.collisionTimer.restart(); // Checks for collisions
 	}
 	
 	public void initRetryPage() {	
 		impactEffectTimer.restart();
 	}
 	
-	// collisionTimer exectutes this method
+	// collisionTimer executes this method
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (userState == UserState.IN_GAME)
@@ -352,15 +349,16 @@ public class Board extends JPanel implements ActionListener{
 	private void checkCollision() {
 		// Creates a rectangle around the bird and for every pillar (bottom and upper) in every pillar structure
 		boolean isHit = false;
-		Rectangle birdRect = new Rectangle(bird.getxPosition(), bird.getyPosition(), bird.getBirdImage().getWidth(null) - 100, bird.getBirdImage().getHeight(null) - 100);
+		Rectangle birdRect = new Rectangle(bird.getxPosition(), bird.getyPosition(), bird.getBirdImage().getWidth(null) - 80, bird.getBirdImage().getHeight(null) - 50);
 		for(PillarStructure pillar: pillars) {
 			Rectangle upperRect = new Rectangle(1280 - pillar.getDistance(), 0, PillarStructure.pillarWidth, pillar.getUpperHeight());
 			Rectangle bottomRect = new Rectangle(1280 - pillar.getDistance(), 720 - pillar.getBottomHeight(), PillarStructure.pillarWidth, pillar.getBottomHeight());
 			// if the bird hit one of the pillars
 			if (birdRect.intersects(upperRect) || birdRect.intersects(bottomRect))
 				isHit = true;
-			if(birdRect.getCenterX() - 1.5 == upperRect.getCenterX()) {
-				this.currentScore++;
+			if(birdRect.getCenterX() >= upperRect.getCenterX() && !pillar.isPassed()) {
+				Board.currentScore++;
+				pillar.setPassed(true);
 				Coin.playCoinSound();
 			}
 		}
@@ -373,7 +371,7 @@ public class Board extends JPanel implements ActionListener{
 			Rectangle coinRect = new Rectangle(coin.getxPosition(), coin.getyPosition(), Coin.coinWidth, Coin.coinHeight);
 			if(birdRect.intersects(coinRect) && coin.isCollected() == false) {
 				coin.setCollected(true);
-				this.currentScore++;
+				Board.currentScore++;
 				Coin.playCoinSound();
 			}
 		}
@@ -381,9 +379,9 @@ public class Board extends JPanel implements ActionListener{
 		if (birdRect.intersects(Board.groundRect))
 			isHit = true;
 		if(isHit) {
-			// If Score acheived is greater than highest score, it is updated in the file
-			if(this.currentScore > currentPlayer.getScore())
-				this.currentPlayer.incrementHighestScore(this.currentScore);
+			// If Score achieved is greater than highest score, it is updated in the file
+			if(Board.currentScore > currentPlayer.getScore())
+				Board.currentPlayer.incrementHighestScore(Board.currentScore);
 			// User is not playing anymore and bird thread is dead
 			bird.playImpactSound();
 			userState = UserState.RETRY_PAGE;
@@ -396,6 +394,7 @@ public class Board extends JPanel implements ActionListener{
 				mine.interrupt();
 			}
 			
+			// Kills all remaining coins
 			for(Coin coin: coins) {
 				//coin.stopAnimation();
 				coin.setStatus("DEAD");
@@ -409,7 +408,6 @@ public class Board extends JPanel implements ActionListener{
 			this.mineTimer.stop();
 			this.coinTimer.stop();
 			// impactEffectTimer and playButtonTimer stop by themselves
-			
 			// Initializes change of background
 			initRetryPage();
 		}
@@ -439,8 +437,8 @@ public class Board extends JPanel implements ActionListener{
 	
 	public void drawRetryPage(Graphics g) {
 		drawGame(g);
-		this.retryButton.drawUnpressedButton(g, 315, 280);
-		this.mainMenuButton.drawUnpressedButton(g, 700, 280);
+		Board.retryButton.drawUnpressedButton(g, 315, 280);
+		Board.mainMenuButton.drawUnpressedButton(g, 700, 280);
 		g.setFont(getFont().deriveFont(Font.PLAIN, 70));
 		g.drawString("RETRY", 350, 370);
 		g.drawString("MAIN", 755, 345);
@@ -462,7 +460,7 @@ public class Board extends JPanel implements ActionListener{
 			if(coin.isCollected() == false)
 				coin.drawCoin(g);
 		
-		g.drawString(String.valueOf(this.currentScore), 590, 130);
+		g.drawString(String.valueOf(Board.currentScore), 590, 130);
 		
 		bird.drawBird(g);
 	}
@@ -476,7 +474,7 @@ public class Board extends JPanel implements ActionListener{
 		Board.playButton.drawPlayButton(g);
 		if(loggedIn) {
 			g.setColor(Color.black);
-			this.logOutButton.drawUnpressedButton(g, 960, 520);
+			Board.logOutButton.drawUnpressedButton(g, 960, 520);
 			g.drawString("LOG", 1040, 580);
 			g.drawString("OUT", 1040, 620);
 		}
@@ -486,7 +484,7 @@ public class Board extends JPanel implements ActionListener{
 	public Font getFont() {
 		Font font = null;
 		try {
-			URL fontURL = new URL("file:///C:\\Users\\talsh\\OneDrive\\Desktop\\Flash Drive Backup\\Amal B Computer Programming 14th Grade\\Mario\\Project\\FlappyBirdGame\\Fonts\\PixalatedFont.ttf");
+			URL fontURL = new URL("file:./Fonts/PixalatedFont.ttf");
 			
 			font = Font.createFont(Font.TRUETYPE_FONT, fontURL.openStream());
 			font = font.deriveFont(Font.PLAIN, 150);
@@ -501,6 +499,124 @@ public class Board extends JPanel implements ActionListener{
 	// Small class which allows for recording and running code when pressing a key on the mouse and actuating a key press
 	private class MAdapter extends MouseAdapter{
 		
+		// A method which gets a mouse events and handles it accordingly
+				public void mouseClicked(MouseEvent e) {
+					if (userState == UserState.MAIN_MENU) {
+						// Creates a point the the mouse event coordinates, creates a rectangle around the playButton image
+						Point point = new Point(e.getX(), e.getY());
+						Rectangle playButtonBounds = new Rectangle(playButton.getX(), playButton.getY(), PlayButton.playButtonWidth, PlayButton.playButtonHeight);
+						// Checks if the click was inside the image
+						if(e.getButton() == MouseEvent.BUTTON1 && playButtonBounds.contains(point)) {
+							if(loggedIn == false) {
+								JPanel p1 = new JPanel();
+								JPanel p2 = new JPanel();
+								// p1 components
+							    JLabel newUserLabel = new JLabel("Please enter a new username");
+							    JTextField newUserTextField = new JTextField("Your username",16);
+							    
+							    newUserTextField.setSelectionColor(Color.YELLOW);
+							    newUserTextField.setSelectedTextColor(Color.RED);
+							    newUserTextField.setHorizontalAlignment(JTextField.CENTER);
+							    
+							    JButton newUserButton = new JButton("OK");
+							    JLabel errorLabel = new JLabel();
+							    JLabel warningLabel = new JLabel("<html>Spaces will be removed if included</html>");
+							    errorLabel.setBackground(Color.red);
+							    p1.add(newUserLabel);
+							    p1.add(newUserTextField);
+							    p1.add(newUserButton);
+							    p1.add(warningLabel);	
+							    // p2 components
+							    ButtonGroup bg = new ButtonGroup();
+							    for(Player player: players) {
+							    	JRadioButton rb = new JRadioButton(player.getName());
+							    	p2.add(rb);
+							    	bg.add(rb);
+							    }
+							    JButton existingUserButton = new JButton("OK");
+							    p2.add(existingUserButton);
+							    JTabbedPane tp = new JTabbedPane(); 
+							    tp.setBounds(500 ,300 ,300,300);  
+							    tp.add("New User",p1);  
+							    tp.add("Existing User",p2);   
+							    Board.this.add(tp);
+							    
+							    newUserButton.addActionListener(new ActionListener() {
+
+									@Override
+									public void actionPerformed(ActionEvent e) {
+										String usernameInput = newUserTextField.getText().replaceAll(" ", "");
+										if(!isUsernameExist(usernameInput)) {
+											addNewUsername(usernameInput);
+											updatePlayers();
+											currentPlayer = findPlayer(usernameInput) != null ? findPlayer(usernameInput) : null;
+											loggedIn = true;
+											Board.this.remove(tp);
+										} else {
+											errorLabel.setText("<html><font color='red'>Username already exists, please pick another</font></html>");
+											p1.add(errorLabel);
+										}
+									}
+							    });
+							    
+							    existingUserButton.addActionListener(new ActionListener() {
+
+									@Override
+									public void actionPerformed(ActionEvent e) {
+										if(bg.getSelection() != null) {
+											
+											currentPlayer = findPlayer(getSelectedButtonText(bg));
+											loggedIn = true;
+											Board.this.remove(tp);
+										} else {
+											errorLabel.setText("<html><font color='red'>You have to pick one of the options</font></html>");
+											p2.add(errorLabel);
+											}
+									}
+							    });
+							} else { 
+								// User is now playing
+								userState = UserState.IN_GAME;
+								
+								// Creates a new bird thread for user to play with
+								bird = new Bird(590, 150);
+								bird.isAlive = true;
+								bird.start();
+								bird.jump();
+								
+								// Initialize pillars and timers and starts the game
+								initGame();
+							}
+						} 
+						Rectangle logOutBounds = new Rectangle(logOutButton.getXPosition(), logOutButton.getYPosition(), logOutButton.getButtonWidth(), logOutButton.getButtonHeight());
+						if(e.getButton() == MouseEvent.BUTTON1 && logOutBounds.contains(point)) {
+							loggedIn = false;
+							currentPlayer = null;
+						}
+					}
+					else if (userState == UserState.RETRY_PAGE) {
+						Point point = new Point(e.getX(), e.getY());
+						Rectangle retryImageBounds = new Rectangle(retryButton.getXPosition(), retryButton.getYPosition(), retryButton.getButtonWidth(), retryButton.getButtonHeight());
+						Rectangle mainMenuImageBounds = new Rectangle(mainMenuButton.getXPosition(), mainMenuButton.getYPosition(), mainMenuButton.getButtonWidth(), mainMenuButton.getButtonHeight());
+						if(e.getButton() == MouseEvent.BUTTON1 && retryImageBounds.contains(point)) {
+							currentScore = 0;
+							userState = UserState.IN_GAME;
+							bird = new Bird(590, 150);
+							bird.isAlive = true;
+							bird.start();
+							bird.jump();
+							initGame();
+						}
+						else if(e.getButton() == MouseEvent.BUTTON1 && mainMenuImageBounds.contains(point)) {
+							currentScore = 0;
+							userState = UserState.MAIN_MENU;
+							initMenu();
+						}
+					} else if (userState == UserState.IN_GAME) {
+						bird.jump();
+					}
+				}
+		
 		private Player findPlayer(String usernameInput) {
 			for(Player player: players) {
 				if(player.getName().equals(usernameInput))
@@ -510,29 +626,21 @@ public class Board extends JPanel implements ActionListener{
 		}
 
 		private boolean isUsernameExist(String usernameInput) {
-			File file = new File("C:\\Users\\talsh\\OneDrive\\Desktop\\Flash Drive Backup\\Amal B Computer Programming 14th Grade\\Mario\\Project\\FlappyBirdGame\\Files\\players.txt");
-			try {
-				Scanner sc = new Scanner(file);
-				while(sc.hasNextLine()) {
-					String[] playerInfo = sc.nextLine().split(" ");
-					if(playerInfo[0].equals(usernameInput)) {
-						sc.close();
-						return true; 
-					}
-				}
-				sc.close();
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
+			for(Player player: players) {
+				if(player.getName().equals(usernameInput))
+					return true;
 			}
 			return false;
 		}
 
 		private void addNewUsername(String usernameInput) {
-			File file = new File("C:\\Users\\talsh\\OneDrive\\Desktop\\Flash Drive Backup\\Amal B Computer Programming 14th Grade\\Mario\\Project\\FlappyBirdGame\\Files\\players.txt");
+			File file = new File("./Files/players.txt");
 			try {
 				Scanner sc = new Scanner(file);
 				FileWriter fw = new FileWriter(file, true);
-				fw.write("\n" + usernameInput + " 0");
+				if(Board.players.size() != 0)
+					fw.write("\n");
+				fw.write(usernameInput + " 0");
 				fw.close();
 				sc.close();
 			} catch (Exception e) {
@@ -543,144 +651,11 @@ public class Board extends JPanel implements ActionListener{
 		private String getSelectedButtonText(ButtonGroup bg) {
 			 for (Enumeration<AbstractButton> buttons = bg.getElements(); buttons.hasMoreElements();) {
 		            AbstractButton button = buttons.nextElement();
-
 		            if (button.isSelected()) {
 		                return button.getText();
 		            }
 		        }
-			 
 			 return null;
-		}
-		
-		// A method which gets a mouse events and handles it accordingly
-		public void mouseClicked(MouseEvent e) {
-			if (userState == UserState.MAIN_MENU) {
-				// Creates a point the the mouse event coordinates, creates a rectangle around the playButton image
-				Point point = new Point(e.getX(), e.getY());
-				Rectangle playButtonBounds = new Rectangle(playButton.getX(), playButton.getY(), PlayButton.playButtonWidth, PlayButton.playButtonHeight);
-				// Checks if the click was inside the image
-				if(e.getButton() == MouseEvent.BUTTON1 && playButtonBounds.contains(point)) {
-					if(loggedIn == false) {
-						JPanel p1 = new JPanel();
-						JPanel p2 = new JPanel();
-						// p1 components
-					    JLabel newUserLabel = new JLabel("Please enter a new username");
-					    JTextField newUserTextField = new JTextField("Your username",16);
-					    
-					    newUserTextField.setSelectionColor(Color.YELLOW);
-					    newUserTextField.setSelectedTextColor(Color.RED);
-					    newUserTextField.setHorizontalAlignment(JTextField.CENTER);
-					    
-					    JButton newUserButton = new JButton("OK");
-					    JLabel errorLabel = new JLabel();
-					    JLabel warningLabel = new JLabel("<html>Spaces will be removed if included</html>");
-					    errorLabel.setBackground(Color.red);
-					    p1.add(newUserLabel);
-					    p1.add(newUserTextField);
-					    p1.add(newUserButton);
-					    p1.add(warningLabel);	
-					    // p2 components
-					    ButtonGroup bg = new ButtonGroup();
-					    for(Player player: players) {
-					    	JRadioButton rb = new JRadioButton(player.getName());
-					    	p2.add(rb);
-					    	bg.add(rb);
-					    }
-					    JButton existingUserButton = new JButton("OK");
-					    p2.add(existingUserButton);
-					    JTabbedPane tp = new JTabbedPane(); 
-					    tp.setBounds(500 ,300 ,300,300);  
-					    tp.add("New User",p1);  
-					    tp.add("Existing User",p2);   
-					    Board.this.add(tp);
-					    
-					    existingUserButton.addActionListener(new ActionListener() {
-
-							@Override
-							public void actionPerformed(ActionEvent e) {
-								if(bg.getSelection() != null) {
-									
-									currentPlayer = findPlayer(getSelectedButtonText(bg));
-									loggedIn = true;
-									Board.this.remove(tp);
-								} else {
-									errorLabel.setText("<html><font color='red'>You have to pick one of the options</font></html>");
-									p2.add(errorLabel);
-									}
-							}
-					    	
-					    });
-					    
-					    newUserButton.addActionListener(new ActionListener() {
-
-							@Override
-							public void actionPerformed(ActionEvent e) {
-								String usernameInput = newUserTextField.getText().replaceAll(" ", "");
-								if(!isUsernameExist(usernameInput)) {
-									addNewUsername(usernameInput); //works
-									updatePlayers();
-									currentPlayer = findPlayer(usernameInput) != null ? findPlayer(usernameInput) : null;
-									loggedIn = true;
-									Board.this.remove(tp);
-								} else {
-									errorLabel.setText("<html><font color='red'>Username already exists, please pick another</font></html>");
-									p1.add(errorLabel);
-								}
-							}
-					    });
-					} else { 
-						// User is now playing
-						userState = UserState.IN_GAME;
-						// Interrupts the last bird thread (static image in main menu/bird from last try)
-						if(!Bird.interrupted()) {
-							bird.isAlive = false;
-							bird.interrupt();
-						}
-						
-						// Creates a new bird thread for user to play with
-						bird = new Bird(590, 150);
-						bird.isAlive = true;
-						bird.start();
-						bird.jump();
-						
-						// Initialize pillars and timers and starts the game
-						initGame();
-						//repaint();
-					}
-				} 
-				Rectangle logOutBounds = new Rectangle(logOutButton.getXPosition(), logOutButton.getYPosition(), logOutButton.getButtonWidth(), logOutButton.getButtonHeight());
-				if(e.getButton() == MouseEvent.BUTTON1 && logOutBounds.contains(point) && loggedIn) {
-					loggedIn = false;
-					currentPlayer = null;
-				}
-			}
-			else if (userState == UserState.RETRY_PAGE) {
-				Point point = new Point(e.getX(), e.getY());
-				Rectangle retryImageBounds = new Rectangle(retryButton.getXPosition(), retryButton.getYPosition(), retryButton.getButtonWidth(), retryButton.getButtonHeight());
-				Rectangle mainMenuImageBounds = new Rectangle(mainMenuButton.getXPosition(), mainMenuButton.getYPosition(), mainMenuButton.getButtonWidth(), mainMenuButton.getButtonHeight());
-				if(e.getButton() == MouseEvent.BUTTON1 && retryImageBounds.contains(point)) {
-					currentScore = 0;
-					userState = UserState.IN_GAME;
-					if(!Bird.interrupted()) {
-						bird.isAlive = false;
-						bird.interrupt();
-					}
-					bird = new Bird(590, 150);
-					bird.isAlive = true;
-					bird.start();
-					bird.jump();
-					initGame();
-				}
-				else if(e.getButton() == MouseEvent.BUTTON1 && mainMenuImageBounds.contains(point)) {
-					currentScore = 0;
-					userState = UserState.MAIN_MENU;
-					initMenu();
-				}
-				repaint();
-			} else if (userState == UserState.IN_GAME) {
-				bird.jump();
-				repaint();
-			}
 		}
 	}
 }

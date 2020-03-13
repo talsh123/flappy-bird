@@ -1,10 +1,8 @@
 package container;
 
 import java.awt.EventQueue;
-
 import javax.swing.JFrame;
 import javax.swing.WindowConstants;
-
 import elements.Board;
 
 @SuppressWarnings("serial")
@@ -36,5 +34,4 @@ public class FlappyBird extends JFrame{
 			frame.setVisible(true);
 		});
 	}
-
 }

@@ -5,7 +5,6 @@ import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.io.File;
-
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
@@ -28,7 +27,7 @@ public class Coin extends Thread implements Runnable{
 	private Status status;
 	
 	public Coin(PillarStructure leftPillar, PillarStructure rightPillar) {
-		this.coin = Toolkit.getDefaultToolkit().createImage("C:/Users/talsh/OneDrive/Desktop/Flash Drive Backup/Amal B Computer Programming 14th Grade/Mario/Project/FlappyBirdGame//Images/coinNew.gif");
+		this.coin = Toolkit.getDefaultToolkit().createImage("./Images/coin.gif");
 		this.status = Status.RUNNING;
 		this.leftPillar = leftPillar;
 		this.rightPillar = rightPillar;

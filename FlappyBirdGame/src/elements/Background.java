@@ -2,22 +2,21 @@ package elements;
 
 import java.awt.Graphics;
 import java.awt.Image;
-
 import javax.swing.ImageIcon;
 
 public class Background {
-	private Image background;
+	private static Image background;
 	private int xPosition, yPosition;
 	
 	public Background(int xPosition, int yPosition) {
 		ImageIcon iib = new ImageIcon("./Images/background.jpg");
-		this.background = iib.getImage();
+		Background.background = iib.getImage();
 		this.xPosition = xPosition;
 		this.yPosition = yPosition;
 	}
 	
 	public void drawBackground(Graphics g) {
-		g.drawImage(this.background, this.xPosition, this.yPosition, null);
+		g.drawImage(Background.background, this.xPosition, this.yPosition, null);
 	}
 	
 	public void move() {
@@ -29,7 +28,7 @@ public class Background {
 	}
 
 	public void setBackground(Image background) {
-		this.background = background;
+		Background.background = background;
 	}
 
 	public int getxPosition() {

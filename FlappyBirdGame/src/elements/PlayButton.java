@@ -7,7 +7,6 @@ import java.awt.Graphics;
 import java.awt.Image;
 import java.io.IOException;
 import java.net.URL;
-
 import javax.swing.ImageIcon;
 
 public class PlayButton {
@@ -31,7 +30,7 @@ public class PlayButton {
 	public Font getFont() {
 		Font font = null;
 		try {
-			URL fontURL = new URL("file:///C:\\Users\\talsh\\OneDrive\\Desktop\\Flash Drive Backup\\Amal B Computer Programming 14th Grade\\Mario\\Project\\FlappyBirdGame\\Fonts\\PixalatedFont.ttf");
+			URL fontURL = new URL("file:./Fonts/PixalatedFont.ttf");
 			
 			font = Font.createFont(Font.TRUETYPE_FONT, fontURL.openStream());
 			font = font.deriveFont(Font.PLAIN, 65);
@@ -79,5 +78,4 @@ public class PlayButton {
 	public void setY(int y) {
 		this.y = y;
 	}
-	
 }

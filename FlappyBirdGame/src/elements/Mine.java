@@ -2,7 +2,6 @@ package elements;
 
 import java.awt.Graphics;
 import java.awt.Image;
-
 import javax.swing.ImageIcon;
 
 public class Mine extends Thread implements Runnable{
@@ -53,7 +52,6 @@ public class Mine extends Thread implements Runnable{
 				Thread.sleep(12);
 			}
 		}catch(InterruptedException e) {
-			
 		}
 	}
 	
