@@ -66,7 +66,7 @@ public class Board extends JPanel implements ActionListener{
 	private static List<Background> backgroundImages;
 	public static List<PillarStructure> pillars;
 	public static List<Mine> mines;
-	private static List<Coin> coins;
+	public static List<Coin> coins;
 	
 	private Image backgroundImage;
 	
@@ -79,7 +79,8 @@ public class Board extends JPanel implements ActionListener{
 	private Timer pillarTimer; // looping pillars
 	private Timer impactEffectTimer; // Timer which fades in and out the color black of the JPanel to simulate impact
 	private Timer mineTimer; // Timer which checks if the mine is out of the panel borders, and if so kills it
-	private Timer coinTimer; //Timer which checks when the coin is out of the panel borders, if so kills it
+	private Timer coinTimer; // Timer which checks when the coin is out of the panel borders, if so kills it
+	private Timer repaintTimer; // Timer which in charge of repainting the screen every millisecond
 	
 	public Board(){
 		super();
@@ -123,7 +124,6 @@ public class Board extends JPanel implements ActionListener{
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				playButton.changeButtonPosition();
-				repaint();
 			}
 		});
 		playButtonTimer.setInitialDelay(0);
@@ -139,7 +139,6 @@ public class Board extends JPanel implements ActionListener{
 				}
 				for (Background image: backgroundImages)
 					image.move();
-				repaint();
 			}
 		});
 		backgroundChangeTimer.setInitialDelay(0);
@@ -186,7 +185,6 @@ public class Board extends JPanel implements ActionListener{
 					coins.add(new Coin(pillars.get(1), pillars.get(2)));
 					coins.get(coins.size() - 1).start();
 				}
-				repaint();
 			};
 		});
 		pillarTimer.setInitialDelay(0);
@@ -204,7 +202,6 @@ public class Board extends JPanel implements ActionListener{
 						mines.remove(0);
 					}
 				}
-				repaint();
 			}
 			
 		});
@@ -219,15 +216,26 @@ public class Board extends JPanel implements ActionListener{
 					int index = coinsCopy.indexOf(coin);
 					if(coin.getxPosition() <= -Coin.coinWidth) {
 						coins.get(index).setStatus("DEAD");
-						//coins.get(index).stopAnimation();
 						coins.get(index).interrupt();
 						coins.remove(0);
 					}
 				}
-				repaint();
 			}
 		});
 		coinTimer.setInitialDelay(0);
+		
+		this.repaintTimer = new Timer(2, new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				repaint();
+			}
+			
+		});
+		this.repaintTimer.setInitialDelay(0);
+		
+		// Repaint Timer never stops
+		this.repaintTimer.restart();
 		
 		// Collision timer used to check for Collisions
 		this.collisionTimer = new Timer(1, this);
@@ -243,7 +251,6 @@ public class Board extends JPanel implements ActionListener{
 				} else {
 					impactEffectTimer.stop();
 				}
-				repaint();
 			};
 		});
 		pillarTimer.setInitialDelay(0);
@@ -342,14 +349,14 @@ public class Board extends JPanel implements ActionListener{
 	// collisionTimer executes this method
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if (userState == UserState.IN_GAME)
+		if (userState == UserState.IN_GAME) {}
 			checkCollision();
 	}
 
 	private void checkCollision() {
 		// Creates a rectangle around the bird and for every pillar (bottom and upper) in every pillar structure
 		boolean isHit = false;
-		Rectangle birdRect = new Rectangle(bird.getxPosition(), bird.getyPosition(), bird.getBirdImage().getWidth(null) - 80, bird.getBirdImage().getHeight(null) - 50);
+		Rectangle birdRect = new Rectangle(bird.getxPosition(), bird.getyPosition(), bird.getBirdImage().getWidth(null) - 100, bird.getBirdImage().getHeight(null) - 50);
 		for(PillarStructure pillar: pillars) {
 			Rectangle upperRect = new Rectangle(1280 - pillar.getDistance(), 0, PillarStructure.pillarWidth, pillar.getUpperHeight());
 			Rectangle bottomRect = new Rectangle(1280 - pillar.getDistance(), 720 - pillar.getBottomHeight(), PillarStructure.pillarWidth, pillar.getBottomHeight());
@@ -416,7 +423,7 @@ public class Board extends JPanel implements ActionListener{
 	@Override
 	public void paintComponent(Graphics g) {
 		// Important! - Do not delete
-		//super.paintComponent(g);
+		super.paintComponent(g);
 		switch(userState) {
 		case IN_GAME:
 			//Drawing when use is playing the game
@@ -453,12 +460,16 @@ public class Board extends JPanel implements ActionListener{
 		for (PillarStructure pillar: pillars)
 			pillar.drawPillar(g);
 		
-		for (Mine mine: mines)
+		for (Mine mine: mines) {
+			g.setColor(Color.black);
 			mine.drawMine(g);
+		}
 		
 		for(Coin coin: coins)
-			if(coin.isCollected() == false)
+			if(coin.isCollected() == false) {
+				g.setColor(Color.black);
 				coin.drawCoin(g);
+			}
 		
 		g.drawString(String.valueOf(Board.currentScore), 590, 130);
 		
@@ -519,13 +530,15 @@ public class Board extends JPanel implements ActionListener{
 							    newUserTextField.setHorizontalAlignment(JTextField.CENTER);
 							    
 							    JButton newUserButton = new JButton("OK");
-							    JLabel errorLabel = new JLabel();
+							    JLabel sameUsernameError = new JLabel();
+							    JLabel emptyUsernameError = new JLabel();
 							    JLabel warningLabel = new JLabel("<html>Spaces will be removed if included</html>");
-							    errorLabel.setBackground(Color.red);
+							    sameUsernameError.setBackground(Color.red);
+							    emptyUsernameError.setBackground(Color.red);
 							    p1.add(newUserLabel);
 							    p1.add(newUserTextField);
 							    p1.add(newUserButton);
-							    p1.add(warningLabel);	
+							    p1.add(warningLabel);
 							    // p2 components
 							    ButtonGroup bg = new ButtonGroup();
 							    for(Player player: players) {
@@ -546,15 +559,21 @@ public class Board extends JPanel implements ActionListener{
 									@Override
 									public void actionPerformed(ActionEvent e) {
 										String usernameInput = newUserTextField.getText().replaceAll(" ", "");
-										if(!isUsernameExist(usernameInput)) {
+										if(usernameInput.equals("")) {
+											emptyUsernameError.setText("<html><font color='red'>Username cannot be an empty string!</font></html>");
+											p1.add(emptyUsernameError);
+										}
+										else if(!isUsernameExist(usernameInput)) {
+											p1.remove(emptyUsernameError);
 											addNewUsername(usernameInput);
 											updatePlayers();
 											currentPlayer = findPlayer(usernameInput) != null ? findPlayer(usernameInput) : null;
 											loggedIn = true;
 											Board.this.remove(tp);
 										} else {
-											errorLabel.setText("<html><font color='red'>Username already exists, please pick another</font></html>");
-											p1.add(errorLabel);
+											p1.remove(emptyUsernameError);
+											sameUsernameError.setText("<html><font color='red'>Username already exists, please pick another!</font></html>");
+											p1.add(sameUsernameError);
 										}
 									}
 							    });
@@ -569,8 +588,8 @@ public class Board extends JPanel implements ActionListener{
 											loggedIn = true;
 											Board.this.remove(tp);
 										} else {
-											errorLabel.setText("<html><font color='red'>You have to pick one of the options</font></html>");
-											p2.add(errorLabel);
+											sameUsernameError.setText("<html><font color='red'>You have to pick one of the options!</font></html>");
+											p2.add(sameUsernameError);
 											}
 									}
 							    });
