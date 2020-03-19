@@ -1,4 +1,0 @@
-Things to take care of in FlappyBirdGame:
-
-- Add a PAUSE page in the game when user presses 'p'.
-- Change where the coins spawn, so they don't spawn on top of the mines, but fairly close to them.

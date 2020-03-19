@@ -2,22 +2,22 @@ package elements;
 
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.geom.Ellipse2D;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
-import javax.swing.*;
 
 public class Bird extends Thread implements Runnable{
 	
 	private int xPosition, yPosition;
-	public static final int birdWidth = 90, birdHeight= 70;
-	private static Image birdImage;
+	private static BufferedImage birdImage;
 	public boolean isAlive = false;
 	private double currentImageAngle = 0;
+	private int degreeToRotate;
 	
 	// Physics variables
 	private int vertSpeed; // Negative - goes up,  Positive - goes down
@@ -30,8 +30,7 @@ public class Bird extends Thread implements Runnable{
 		this.isAlive = false; // Game starts with opening menu
 		this.vertSpeed = 0;
 		
-		ImageIcon iib = new ImageIcon("./Images/bird.png");
-		Bird.birdImage = iib.getImage();
+		Bird.birdImage = LoadImage();
 	}
 	
 	public void run() {
@@ -40,16 +39,16 @@ public class Bird extends Thread implements Runnable{
 				this.vertSpeed += Bird.fallingConstant;
 				this.yPosition += this.vertSpeed;
 				if (this.vertSpeed < 25 && this.currentImageAngle != -45) {
-					rotateImage(-45);
+					this.degreeToRotate = -45;
 				}
 				else if(this.vertSpeed == 25 && this.currentImageAngle != 0) {
-					rotateImage(0);
+					this.degreeToRotate = 0;
 				}
 				else if(this.vertSpeed > 25 && this.vertSpeed < 30 && this.currentImageAngle != 45) {
-					rotateImage(45);
+					this.degreeToRotate = 45;
 				}
 				else if(this.vertSpeed > 30 && this.currentImageAngle != 90) {
-					rotateImage(90);
+					this.degreeToRotate = 90;
 				}
 				Thread.sleep(35);
 			}
@@ -62,28 +61,26 @@ public class Bird extends Thread implements Runnable{
 		this.yPosition += this.vertSpeed;
 	}
 	
+	private BufferedImage LoadImage() {
+		BufferedImage bird = null;
+		
+		try {
+			bird = ImageIO.read(new File("./Images/bird.png"));
+		} catch (IOException e) {
+		}
+		
+		return bird;
+	}
+	
 	public void drawBird(Graphics g) {
-		g.drawImage(Bird.birdImage, this.xPosition, this.yPosition, Bird.birdWidth, Bird.birdHeight, null);
+		AffineTransform at = AffineTransform.getTranslateInstance(this.xPosition, this.yPosition);
+		at.rotate(Math.toRadians(this.degreeToRotate), Bird.birdImage.getWidth() / 2, Bird.birdImage.getHeight() / 2);
+		Graphics2D g2d = (Graphics2D) g;
+		g2d.drawImage(Bird.birdImage, at, null);
 	}
 	
 	public void drawBird(Graphics g, int x, int y) {
-		g.drawImage(Bird.birdImage, x, y, Bird.birdWidth, Bird.birdHeight, null);
-	}
-	
-	
-	// Gets a degree and it rotates the image to that degree with no consideration to former angle
-	void rotateImage(double degree) {
-		try {
-			BufferedImage blackCanvas = new BufferedImage(Bird.birdImage.getWidth(null), Bird.birdImage.getHeight(null), BufferedImage.TYPE_INT_ARGB);
-			Graphics2D g2 = (Graphics2D)blackCanvas.getGraphics();
-			g2.rotate(Math.toRadians(degree - this.currentImageAngle), Bird.birdImage.getWidth(null) / 2, Bird.birdImage.getHeight(null) / 2);
-			g2.setClip(new Ellipse2D.Float(0, 0, Bird.birdImage.getWidth(null), Bird.birdImage.getHeight(null)));
-			g2.drawImage(Bird.birdImage, 0, 0, null);
-			Bird.birdImage = blackCanvas;
-			currentImageAngle = degree;
-		} catch(Exception e) {
-			System.out.println(Bird.birdImage.getWidth(null));
-		}
+		g.drawImage(Bird.birdImage, x, y, null);
 	}
 	
 	public void playImpactSound() {
@@ -113,12 +110,8 @@ public class Bird extends Thread implements Runnable{
 		this.yPosition = yPosition;
 	}
 
-	public Image getBirdImage() {
+	public BufferedImage getBirdImage() {
 		return birdImage;
-	}
-
-	public void setBirdImage(Image birdImage) {
-		Bird.birdImage = birdImage;
 	}
 
 	public double getCurrentImageAngle() {

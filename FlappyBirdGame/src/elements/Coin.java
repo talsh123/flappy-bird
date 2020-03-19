@@ -192,6 +192,5 @@ public class Coin extends Thread implements Runnable{
 
 	public void drawCoin(Graphics g) {
 		g.drawImage(this.coin, this.xPosition, this.yPosition, Coin.coinWidth, Coin.coinHeight, null);
-		g.drawRect((int)this.coinRect.getX(), (int)this.coinRect.getY(), (int)this.coinRect.getWidth(), (int)this.coinRect.getHeight());
 	}
 }

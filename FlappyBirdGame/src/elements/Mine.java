@@ -129,7 +129,6 @@ public class Mine extends Thread implements Runnable{
 
 	public void drawMine(Graphics g) {
 		g.drawImage(this.mine, this.xPosition, this.yPosition, Mine.mineWidth, Mine.mineHeight, null);
-		g.drawRect((int)this.mineRect.getX(), (int)this.mineRect.getY(), Mine.mineWidth, Mine.mineHeight);
 	}
 
 	public int getxPosition() {

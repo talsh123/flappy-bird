@@ -11,6 +11,8 @@ import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -45,11 +47,14 @@ public class Board extends JPanel implements ActionListener{
 	
 	// Universal Elements
 	private static Bird bird;
+	private int lastBirdX;
+	private int lastBirdY;
+	private int lastVertSpeed;
 	
 	private static enum UserState 
 	{
 		// Determines which state the user is in and handles the code according to the situation
-		IN_GAME, MAIN_MENU, RETRY_PAGE
+		IN_GAME, MAIN_MENU, RETRY_PAGE, PAUSE_PAGE
 	}
 	
 	private static UserState userState;
@@ -92,6 +97,9 @@ public class Board extends JPanel implements ActionListener{
 		setPreferredSize(new Dimension(B_WIDTH, B_HEIGHT));
 		
 		addMouseListener(new MAdapter());
+		addKeyListener(new KAdapter());
+		this.setRequestFocusEnabled(true);
+		this.setFocusable(true);
 		
 		initButtons();
 		initArrays();
@@ -346,6 +354,31 @@ public class Board extends JPanel implements ActionListener{
 		impactEffectTimer.restart();
 	}
 	
+	public void pause() {
+		this.collisionTimer.stop();
+		this.pillarTimer.stop();
+		this.backgroundChangeTimer.stop();
+		this.mineTimer.stop();
+		this.coinTimer.stop();
+		this.lastBirdX = Board.bird.getxPosition();
+		this.lastBirdY = Board.bird.getyPosition();
+		this.lastVertSpeed = Board.bird.getVertSpeed();
+		Board.bird.isAlive = false;
+		Board.bird.interrupt();
+	}
+	
+	public void resume() {
+		this.collisionTimer.start();
+		this.pillarTimer.start();
+		this.backgroundChangeTimer.start();
+		this.mineTimer.start();
+		this.coinTimer.start();
+		Board.bird = new Bird(this.lastBirdX, this.lastBirdY);
+		Board.bird.isAlive = true;
+		Board.bird.setVertSpeed(this.lastVertSpeed);
+		bird.start();
+	}
+	
 	// collisionTimer executes this method
 	@Override
 	public void actionPerformed(ActionEvent e) {
@@ -356,7 +389,7 @@ public class Board extends JPanel implements ActionListener{
 	private void checkCollision() {
 		// Creates a rectangle around the bird and for every pillar (bottom and upper) in every pillar structure
 		boolean isHit = false;
-		Rectangle birdRect = new Rectangle(bird.getxPosition(), bird.getyPosition(), bird.getBirdImage().getWidth(null) - 100, bird.getBirdImage().getHeight(null) - 50);
+		Rectangle birdRect = new Rectangle(bird.getxPosition(), bird.getyPosition(), bird.getBirdImage().getWidth(null), bird.getBirdImage().getHeight(null));
 		for(PillarStructure pillar: pillars) {
 			Rectangle upperRect = new Rectangle(1280 - pillar.getDistance(), 0, PillarStructure.pillarWidth, pillar.getUpperHeight());
 			Rectangle bottomRect = new Rectangle(1280 - pillar.getDistance(), 720 - pillar.getBottomHeight(), PillarStructure.pillarWidth, pillar.getBottomHeight());
@@ -422,8 +455,6 @@ public class Board extends JPanel implements ActionListener{
 	
 	@Override
 	public void paintComponent(Graphics g) {
-		// Important! - Do not delete
-		super.paintComponent(g);
 		switch(userState) {
 		case IN_GAME:
 			//Drawing when use is playing the game
@@ -438,8 +469,17 @@ public class Board extends JPanel implements ActionListener{
 			if(!impactEffectTimer.isRunning())
 				drawRetryPage(g);
 			break;
+		case PAUSE_PAGE:
+			drawPausePage(g);
+			break;
 		}
 		Toolkit.getDefaultToolkit().sync();
+	}
+	
+	public void drawPausePage(Graphics g) {
+		drawGame(g);
+		g.setFont(getFont().deriveFont(Font.PLAIN, 90));
+		g.drawString("PAUSED", 500, 300);
 	}
 	
 	public void drawRetryPage(Graphics g) {
@@ -676,5 +716,33 @@ public class Board extends JPanel implements ActionListener{
 		        }
 			 return null;
 		}
+	}
+	
+	private class KAdapter implements KeyListener {
+
+		@Override
+		public void keyTyped(KeyEvent e) {
+			// TODO Auto-generated method stub
+		}
+
+		@Override
+		public void keyPressed(KeyEvent e) {
+			// TODO Auto-generated method stub
+			if(e.getKeyCode() == KeyEvent.VK_P) {
+				if(Board.userState == UserState.IN_GAME) {
+					pause();
+					Board.userState = UserState.PAUSE_PAGE;
+				} else if(Board.userState == UserState.PAUSE_PAGE) {
+					userState = UserState.IN_GAME;
+					resume();
+				}
+			}
+		}
+
+		@Override
+		public void keyReleased(KeyEvent e) {
+			// TODO Auto-generated method stub
+		}
+		
 	}
 }
