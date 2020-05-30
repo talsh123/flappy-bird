@@ -7,27 +7,42 @@ import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.io.File;
 import java.util.concurrent.ThreadLocalRandom;
-
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
+import javax.sound.sampled.DataLine;
 
+// This class contains a coin the can be collected by the bird.
+// Every coin is a thread, the coin thread dies when it leaves the screen.
 public class Coin extends Thread implements Runnable{
-	
+//	X and Y position on screen.
 	private int yPosition, xPosition, distance;
+//	Pillars to the left and the right, used to randomise the position of the coin on screen.
 	private PillarStructure leftPillar, rightPillar;
 	private Image coin;
+//	Rectangle around the coin, being used to make sure Mines and Coin aren't overlapping each other.
 	private Rectangle coinRect;
 	
+//	Whether the coin has been collected or not.
 	private boolean isCollected;
 	
+//	Three stages for the THREAD:
+//	RUNNING - The thread is running from the point of creation (Thread.start())
+//	INTERRUPTED - The thread has been set the status of interrupted
+//	but it has not yet been Thread.interrupt(). I do this because the thread hasn't yet to
+//	leave the screen, and due to how the game is designed, only 2 coin threads need to be
+//	inside the ArrayList in order to be generated correctly.
+//	DEAD - The thread has actually been interrupted using Thread.interrupt().
+//	The thread has left the screen.
 	private static enum Status
 	{
-		RUNNING, DEAD, INTERRUPTED;
+		RUNNING, INTERRUPTED, DEAD
 	}
 	
+//	Coin Dimensions
 	public final static int coinWidth = 60, coinHeight = 60;
 
+//	Status of the thread
 	private Status status;
 	
 	public Coin(PillarStructure leftPillar, PillarStructure rightPillar) {
@@ -39,10 +54,9 @@ public class Coin extends Thread implements Runnable{
 		initCoin();
 	}
 
-	public void stopAnimation() {
-		this.coin.flush();
-	}
-
+//	This method generates a new coin on the screen and randomises
+//	it's position to be between the left and right pillar
+//	all while checking it is not overlapping over other mines on the screen.
 	public void initCoin() {
 		this.isCollected = false;
 		boolean initNewCoin = false;
@@ -66,6 +80,7 @@ public class Coin extends Thread implements Runnable{
 		} while(initNewCoin == true);
 	}
 	
+//	Checks if the current coin is overlapping the given rectangle.
 	public boolean isOverlapping(Rectangle rect) {
 		Point l1 = new Point((int)this.coinRect.getX(), (int)this.coinRect.getY());
 		Point l2 = new Point((int)rect.getX(), (int)rect.getY());
@@ -103,6 +118,8 @@ public class Coin extends Thread implements Runnable{
 		this.isCollected = isCollected;
 	}
 
+//	The run() method of the Coin thread.
+//	positions the coin accordingly on screen depends on it's status.
 	public void run() {
 		try {
 			while(status == Status.RUNNING && !Thread.interrupted()) {
@@ -120,11 +137,15 @@ public class Coin extends Thread implements Runnable{
 		}
 	}
 	
+//	This method plays the Mario coin sound when 
+//	the user collects coins.
 	public static void playCoinSound() {
+		Clip clip = null;
 		try {
-			AudioInputStream audioIn = AudioSystem.getAudioInputStream(new File("./Sounds/coinSound.wav"));
-			Clip clip = AudioSystem.getClip();
-			clip.open(audioIn);
+			AudioInputStream inputStream = AudioSystem.getAudioInputStream(new File("./Sounds/coinSound.wav"));
+			DataLine.Info info = new DataLine.Info(Clip.class, inputStream.getFormat());
+			clip = (Clip)AudioSystem.getLine(info);
+	        clip.open(inputStream);
 			clip.loop(0);
 		} catch(Exception e) {
 			e.printStackTrace();

@@ -30,54 +30,66 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JRadioButton;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.Timer;
 
 @SuppressWarnings("serial")
-public class Board extends JPanel implements ActionListener{
+public class Board extends JPanel{
 	
 	// Board Dimensions
 	public static final int B_WIDTH = 1280;
 	public static final int B_HEIGHT = 720;
 	
-	// Player Score
-	private static int currentScore = 0;
-	
 	// Universal Elements
 	private static Bird bird;
+	
+//	Pause and Resume last bird properties
 	private int lastBirdX;
 	private int lastBirdY;
 	private int lastVertSpeed;
 	
+//	Determines which state the user is in and handles the code according to the situation
 	private static enum UserState 
 	{
-		// Determines which state the user is in and handles the code according to the situation
-		IN_GAME, MAIN_MENU, RETRY_PAGE, PAUSE_PAGE
+		IN_GAME, MAIN_MENU, RETRY_PAGE, PAUSE_PAGE, LEVEL_SELECTION_PAGE
 	}
 	
 	private static UserState userState;
 	
+//	Buttons used
 	private static PlayButton playButton;
 	private static StylizedButton retryButton;
 	private static StylizedButton mainMenuButton;
 	private static StylizedButton logOutButton;
+	private static StylizedButton level1;
+	private static StylizedButton level2;
+	private static StylizedButton level3;
 	
+//	Player information, mid and off game
 	private static Player currentPlayer = null;
 	private static boolean loggedIn = false;
+	private static int currentScore = 0;
+	private static int currentLevel;
+	private static int scoreToUnlockLevel = 2;
 	
+//	ArrayLists being used containing game elements
 	private static List<Player> players;
 	private static List<Background> backgroundImages;
 	public static List<PillarStructure> pillars;
 	public static List<Mine> mines;
 	public static List<Coin> coins;
 	
+//	Static background image for menu
 	private Image backgroundImage;
 	
+//	Rectangles defining game borders
 	public static Rectangle groundRect;
+	public static Rectangle skyRect;
 	
-	// Timers in use
+	// Timers in use, neccessary for game functionality
 	private Timer collisionTimer; // Timer for checking collisions
 	private Timer playButtonTimer; // play Button timer hovering animation
 	private Timer backgroundChangeTimer; // Looping backgroundTimer
@@ -92,6 +104,7 @@ public class Board extends JPanel implements ActionListener{
 		initBoard();
 	}
 	
+//	Initialises board (frame)
 	private void initBoard() {
 		setLayout(null);
 		setPreferredSize(new Dimension(B_WIDTH, B_HEIGHT));
@@ -108,15 +121,20 @@ public class Board extends JPanel implements ActionListener{
 		initMenu(); 
 	}
 	
+//	Initialises buttons used in game
 	private void initButtons() {
-		// Setting up buttons for retry page
 		Board.retryButton = new StylizedButton();
 		Board.mainMenuButton = new StylizedButton();
 		Board.logOutButton = new StylizedButton();
-		// Setting up buttons for main menu page
+		
+		Board.level1 = new StylizedButton();
+		Board.level2 = new StylizedButton();
+		Board.level3 = new StylizedButton();
+		
 		Board.playButton = new PlayButton(540, 250);
 	}
 	
+//	Initialises arrays used in game
 	private void initArrays() {
 		Board.backgroundImages = new ArrayList<>();
 		Board.pillars = new ArrayList<>();
@@ -125,9 +143,10 @@ public class Board extends JPanel implements ActionListener{
 		Board.players = new ArrayList<>();
 	}
 
+//	Initialises all timers used in game
 	private void initTimers() {
-		// PlayButtonTimer used for hovering animation for Play Button
-		this.playButtonTimer = new Timer(1, new ActionListener() {
+		// Timer used for hovering animation for Play Button
+		this.playButtonTimer = new Timer(50, new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -137,7 +156,7 @@ public class Board extends JPanel implements ActionListener{
 		playButtonTimer.setInitialDelay(0);
 		
 		// Timer to loop the same background Image
-		this.backgroundChangeTimer = new Timer(1, new ActionListener() {
+		this.backgroundChangeTimer = new Timer(20, new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -152,7 +171,7 @@ public class Board extends JPanel implements ActionListener{
 		backgroundChangeTimer.setInitialDelay(0);
 		
 		// Timer to create a looping pillars 
-		this.pillarTimer = new Timer(1, new ActionListener() {
+		this.pillarTimer = new Timer(20, new ActionListener() {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -161,11 +180,15 @@ public class Board extends JPanel implements ActionListener{
 					if(pillars.get(0).getxPosition() == 1280) {
 						pillars.add(new PillarStructure());
 						
+						if (currentLevel >= 2) {
 						mines.add(new Mine(pillars.get(1), pillars.get(2)));
 						mines.get(mines.size() - 1).start();
+						}
 						
+						if (currentLevel >= 3) {
 						coins.add(new Coin(pillars.get(1), pillars.get(2)));
 						coins.get(coins.size() - 1).start();
+						}
 					}
 					pillars.get(0).move();
 				}
@@ -183,20 +206,25 @@ public class Board extends JPanel implements ActionListener{
 					pillars.add(new PillarStructure());
 					pillars.remove(0);
 					
-					mines.get(0).setStatus("INTERRUPTED");
+					if (currentLevel >= 2) {
+						mines.get(0).setStatus("INTERRUPTED");
 					
-					mines.add(new Mine(pillars.get(1), pillars.get(2)));
-					mines.get(mines.size() - 1).start();
+						mines.add(new Mine(pillars.get(1), pillars.get(2)));
+						mines.get(mines.size() - 1).start();
+					}
 					
-					coins.get(0).setStatus("INTERRUPTED");
-					
-					coins.add(new Coin(pillars.get(1), pillars.get(2)));
-					coins.get(coins.size() - 1).start();
+					if (currentLevel >= 3) {
+						coins.get(0).setStatus("INTERRUPTED");
+						
+						coins.add(new Coin(pillars.get(1), pillars.get(2)));
+						coins.get(coins.size() - 1).start();						
+					}
 				}
 			};
 		});
 		pillarTimer.setInitialDelay(0);
 		
+//		Timer to interrupt mines and removing them from the array
 		this.mineTimer = new Timer(1, new ActionListener() {
 
 			@Override
@@ -215,6 +243,7 @@ public class Board extends JPanel implements ActionListener{
 		});
 		mineTimer.setInitialDelay(0);
 		
+//		Timer to interrupt coins and removing them from the array
 		this.coinTimer = new Timer(1, new ActionListener() {
 
 			@Override
@@ -232,6 +261,7 @@ public class Board extends JPanel implements ActionListener{
 		});
 		coinTimer.setInitialDelay(0);
 		
+//		Timer to repaint screen
 		this.repaintTimer = new Timer(2, new ActionListener() {
 
 			@Override
@@ -245,10 +275,20 @@ public class Board extends JPanel implements ActionListener{
 		// Repaint Timer never stops
 		this.repaintTimer.restart();
 		
-		// Collision timer used to check for Collisions
-		this.collisionTimer = new Timer(1, this);
+//	Collision timer used to check for Collisions, runs checkCollision
+		this.collisionTimer = new Timer(1, new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (userState == UserState.IN_GAME)
+					checkCollision();
+			}
+			
+		});
 		this.collisionTimer.setInitialDelay(0);
 		
+//		Timer that changes screen color rapidly for impact effect
+//		This timer activates only when user fails
 		impactEffectTimer = new Timer(1, new ActionListener() {
 			int alpha = 0;
 			@Override
@@ -264,8 +304,8 @@ public class Board extends JPanel implements ActionListener{
 		pillarTimer.setInitialDelay(0);
 	}
 	
+//	Initialises/Updates written information over existing players in players.txt
 	private void initPlayers() {
-		// Fetching written information over existing players
 		currentPlayer = null;
 		Board.players.clear();
 		File file = new File("./Files/players.txt");
@@ -273,14 +313,17 @@ public class Board extends JPanel implements ActionListener{
 			Scanner sc = new Scanner(file);
 			while(sc.hasNextLine()) {
 				String[] playerInfo = sc.nextLine().split(" ");
-				Board.players.add(new Player(playerInfo[0], Integer.parseInt(playerInfo[1])));
+				Board.players.add(new Player(playerInfo[0], playerInfo[1], Integer.parseInt(playerInfo[2]), Integer.parseInt(playerInfo[3])));
 			}
 			sc.close();
+			System.out.println(players.size());
+			System.out.println();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
 
+//	Initilises Menu Page
 	private void initMenu() {
 		// Games starts out in Main Menu, thus userState is set to MAIN_MENU
 		userState = UserState.MAIN_MENU;
@@ -292,27 +335,12 @@ public class Board extends JPanel implements ActionListener{
 		// Starts play button timer
 		this.playButtonTimer.restart();
 		
-		// Initializes a new static bird (does not start the thread)
+		// Initialises a new static bird (does not start the thread)
 		Board.bird = new Bird(590, 150);
 		Board.bird.isAlive = false;
 	}
 	
-	private void updatePlayers() {
-		currentPlayer = null;
-		players.clear();
-		File file = new File("./Files/players.txt");
-		try {
-			Scanner sc = new Scanner(file);
-			while(sc.hasNextLine()) {
-				String[] playerInfo = sc.nextLine().split(" ");
-				players.add(new Player(playerInfo[0], Integer.parseInt(playerInfo[1])));
-			}
-			sc.close();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-	}
-	
+//	Initialises game, player starts playing
 	public void initGame() {
 		// Clearing the arrays from last try elements
 		Board.backgroundImages.clear();
@@ -327,11 +355,15 @@ public class Board extends JPanel implements ActionListener{
 		Board.pillars.add(new PillarStructure());
 		
 		// Adding 1 mine and 1 coin and starting them
-		mines.add(new Mine(pillars.get(0), pillars.get(1)));
-		mines.get(mines.size() - 1).start();
+		if (currentLevel >= 2) {
+			mines.add(new Mine(pillars.get(0), pillars.get(1)));
+			mines.get(mines.size() - 1).start();			
+		}
 		
-		coins.add(new Coin(pillars.get(0), pillars.get(1)));
-		coins.get(coins.size() - 1).start();
+		if (currentLevel >= 3) {
+			coins.add(new Coin(pillars.get(0), pillars.get(1)));
+			coins.get(coins.size() - 1).start();			
+		}
 		
 		// Stops Timer for hovering play button
 		playButtonTimer.stop();
@@ -340,52 +372,65 @@ public class Board extends JPanel implements ActionListener{
 		
 		pillarTimer.restart();
 
-		mineTimer.restart(); // Starts when score is 20
+		if (currentLevel >= 2)
+			mineTimer.restart();
 		
-		coinTimer.restart(); // Starts when score is 40
+		if (currentLevel >= 3)
+			coinTimer.restart();
 		
 		// 150px - Height of ground, Rectangle which is a boundary, if bird gets to ground it dies
 		Board.groundRect = new Rectangle(0, 720 - 150, 1280, 150);
+		// Skt rectangle border, if bird 
+		Board.skyRect = new Rectangle(0, -300, 1280, 150);
 		
 		this.collisionTimer.restart(); // Checks for collisions
 	}
 	
+//	Initialises retry page and starts animation for impact effect
 	public void initRetryPage() {	
 		impactEffectTimer.restart();
 	}
 	
+//	Pauses the game when users presses 'P'
 	public void pause() {
-		this.collisionTimer.stop();
-		this.pillarTimer.stop();
-		this.backgroundChangeTimer.stop();
-		this.mineTimer.stop();
-		this.coinTimer.stop();
+		stopGame();
+		if (currentLevel >= 2)
+			this.mineTimer.stop();
+		if (currentLevel >= 3)
+			this.coinTimer.stop();
 		this.lastBirdX = Board.bird.getxPosition();
 		this.lastBirdY = Board.bird.getyPosition();
 		this.lastVertSpeed = Board.bird.getVertSpeed();
-		Board.bird.isAlive = false;
-		Board.bird.interrupt();
 	}
 	
+//	Resumes the game when users presses 'P'
 	public void resume() {
 		this.collisionTimer.start();
 		this.pillarTimer.start();
 		this.backgroundChangeTimer.start();
-		this.mineTimer.start();
-		this.coinTimer.start();
+		if (currentLevel >= 2)
+			this.mineTimer.start();
+		if (currentLevel >= 3)
+			this.coinTimer.start();
 		Board.bird = new Bird(this.lastBirdX, this.lastBirdY);
 		Board.bird.isAlive = true;
 		Board.bird.setVertSpeed(this.lastVertSpeed);
 		bird.start();
 	}
 	
-	// collisionTimer executes this method
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		if (userState == UserState.IN_GAME) {}
-			checkCollision();
+//	Stops the game mechanics
+	public void stopGame() {
+		// Stops the timers for background images and looping pillars
+		this.collisionTimer.stop();
+		this.pillarTimer.stop();
+		this.backgroundChangeTimer.stop();
+		this.mineTimer.stop();
+		this.coinTimer.stop();
+		Board.bird.isAlive = false;
+		bird.interrupt();
 	}
 
+//	Checks if the user has collided with the ground, sky pillars or mines 
 	private void checkCollision() {
 		// Creates a rectangle around the bird and for every pillar (bottom and upper) in every pillar structure
 		boolean isHit = false;
@@ -416,19 +461,20 @@ public class Board extends JPanel implements ActionListener{
 			}
 		}
 		// if the bird hit the ground
-		if (birdRect.intersects(Board.groundRect))
+		if (birdRect.intersects(Board.groundRect) || birdRect.intersects(Board.skyRect))
 			isHit = true;
-		if(isHit) {
+		if(isHit) {	
 			// If Score achieved is greater than highest score, it is updated in the file
-			if(Board.currentScore > currentPlayer.getScore())
-				Board.currentPlayer.incrementHighestScore(Board.currentScore);
+			if(Board.currentScore > currentPlayer.getHighestScore())
+				Board.currentPlayer.updateHighestScore(Board.currentScore);
 			// User is not playing anymore and bird thread is dead
 			bird.playImpactSound();
+			
 			userState = UserState.RETRY_PAGE;
 			Board.bird.isAlive = false;
 			bird.interrupt();
 			
-			// Killing all remaining mines in the mines array
+			// Killing all remaining mines
 			for(Mine mine: mines) {
 				mine.setStatus("DEAD");
 				mine.interrupt();
@@ -436,23 +482,28 @@ public class Board extends JPanel implements ActionListener{
 			
 			// Kills all remaining coins
 			for(Coin coin: coins) {
-				//coin.stopAnimation();
 				coin.setStatus("DEAD");
 				coin.interrupt();
 			}
 			
-			// Stops the timers for background images and looping pillars
-			this.collisionTimer.stop();
-			this.pillarTimer.stop();
-			this.backgroundChangeTimer.stop();
-			this.mineTimer.stop();
-			this.coinTimer.stop();
+			stopGame();
 			// impactEffectTimer and playButtonTimer stop by themselves
-			// Initializes change of background
+			// Initialises change of background
 			initRetryPage();
+//			Checks if the user has surpasses the number of points to unlock the next level
+//			If the user has completed the level before, the user keeps playing and the game doesn't stop
+		} else if(currentScore >= scoreToUnlockLevel && currentPlayer.getLevelsAvailable() < 3) {
+			if(currentPlayer.getLevelsAvailable() == Board.currentLevel && currentPlayer.getLevelsAvailable() <= 2) {
+				stopGame();
+				currentPlayer.updateLevelsAvailable();	
+				currentScore = 0;
+				userState = UserState.LEVEL_SELECTION_PAGE;
+			}
 		}
 	}
 	
+//	Main paint method
+//	This method divides to multiple drawing method depending on userState
 	@Override
 	public void paintComponent(Graphics g) {
 		switch(userState) {
@@ -472,16 +523,52 @@ public class Board extends JPanel implements ActionListener{
 		case PAUSE_PAGE:
 			drawPausePage(g);
 			break;
+		case LEVEL_SELECTION_PAGE:
+			drawLevelSelectionPage(g);
+			break;
 		}
 		Toolkit.getDefaultToolkit().sync();
 	}
 	
+//	Draws level selection page
+	public void drawLevelSelectionPage(Graphics g) {
+//		Draws level selection page
+		super.paintComponent(g);
+		g.drawImage(backgroundImage, 0, 0, null);
+		g.setFont(getFont().deriveFont(Font.PLAIN, 40));
+		if(currentPlayer.getLevelsAvailable() != 3)
+			g.drawString("Reach  score  " + Board.scoreToUnlockLevel + "  to  unlock  the  next  level!", 300, 50);
+		else
+			g.drawString("All  levels  unlocked!", 300, 50);
+//		Level 0 is accessible to every user
+		Board.level1.drawUnpressedButton(g, 500, 100);
+		switch (currentPlayer.getLevelsAvailable()) {
+		case 1:
+			level2.drawUnpressedButtonGreyScale(g, 500, 300);
+			level3.drawUnpressedButtonGreyScale(g, 500, 500);
+			break;
+		case 2:
+			level2.drawUnpressedButton(g, 500, 300);
+			level3.drawUnpressedButtonGreyScale(g, 500, 500);
+			break;
+		case 3:
+			level2.drawUnpressedButton(g, 500, 300);
+			level3.drawUnpressedButton(g, 500, 500);
+			break;
+		}
+		g.drawString("Level 1", 560, 170);
+		g.drawString("Level 2", 560, 370);
+		g.drawString("Level 3", 560, 570);
+	}
+
+//	Draws pause page
 	public void drawPausePage(Graphics g) {
 		drawGame(g);
 		g.setFont(getFont().deriveFont(Font.PLAIN, 90));
 		g.drawString("PAUSED", 500, 300);
 	}
 	
+//	Draws retry page
 	public void drawRetryPage(Graphics g) {
 		drawGame(g);
 		Board.retryButton.drawUnpressedButton(g, 315, 280);
@@ -492,6 +579,7 @@ public class Board extends JPanel implements ActionListener{
 		g.drawString("MENU", 755, 390);
 	}
 	
+//	Draws game when the user plays
 	private void drawGame(Graphics g) {
 		// Draws all background images, pillar structures and the bird
 		for (Background image: backgroundImages)
@@ -500,22 +588,22 @@ public class Board extends JPanel implements ActionListener{
 		for (PillarStructure pillar: pillars)
 			pillar.drawPillar(g);
 		
-		for (Mine mine: mines) {
-			g.setColor(Color.black);
-			mine.drawMine(g);
-		}
-		
-		for(Coin coin: coins)
-			if(coin.isCollected() == false) {
-				g.setColor(Color.black);
-				coin.drawCoin(g);
+		if (currentLevel >= 2)
+			for (Mine mine: mines) {
+				mine.drawMine(g);
 			}
+		if (currentLevel >= 3)
+			for(Coin coin: coins)
+				if(coin.isCollected() == false) {
+					coin.drawCoin(g);
+				}
 		
 		g.drawString(String.valueOf(Board.currentScore), 590, 130);
 		
 		bird.drawBird(g);
 	}
 	
+//	Draws main menu page
 	private void drawMainMenu(Graphics g) {
 		// Draws the background image, game name, bird and the play button
 		g.drawImage(this.backgroundImage, 0, 0, 1280, 720, this);
@@ -535,7 +623,7 @@ public class Board extends JPanel implements ActionListener{
 	public Font getFont() {
 		Font font = null;
 		try {
-			URL fontURL = new URL("file:./Fonts/PixalatedFont.ttf");
+			URL fontURL = new URL("file:./Fonts/PixalatedFont.TTF");
 			
 			font = Font.createFont(Font.TRUETYPE_FONT, fontURL.openStream());
 			font = font.deriveFont(Font.PLAIN, 150);
@@ -556,57 +644,82 @@ public class Board extends JPanel implements ActionListener{
 						// Creates a point the the mouse event coordinates, creates a rectangle around the playButton image
 						Point point = new Point(e.getX(), e.getY());
 						Rectangle playButtonBounds = new Rectangle(playButton.getX(), playButton.getY(), PlayButton.playButtonWidth, PlayButton.playButtonHeight);
-						// Checks if the click was inside the image
+						// Checks if the user clicked the play button in the main menu
 						if(e.getButton() == MouseEvent.BUTTON1 && playButtonBounds.contains(point)) {
+//							If not logged in, shows the panes to sign in as a user
 							if(loggedIn == false) {
 								JPanel p1 = new JPanel();
 								JPanel p2 = new JPanel();
-								// p1 components
-							    JLabel newUserLabel = new JLabel("Please enter a new username");
+								// p1 components (username and password fields)
+							    JLabel newUserLabel = new JLabel("Please enter a new username and password");
 							    JTextField newUserTextField = new JTextField("Your username",16);
-							    
+							    JPasswordField newUserPasswordField = new JPasswordField("", 16);
+							  
+							    // Styling
 							    newUserTextField.setSelectionColor(Color.YELLOW);
 							    newUserTextField.setSelectedTextColor(Color.RED);
 							    newUserTextField.setHorizontalAlignment(JTextField.CENTER);
+							    newUserPasswordField.setSelectionColor(Color.YELLOW);
+							    newUserPasswordField.setSelectedTextColor(Color.RED);
+							    newUserPasswordField.setHorizontalAlignment(JTextField.CENTER);
 							    
+//							    New User Button
 							    JButton newUserButton = new JButton("OK");
+//							    Errors and warnings
 							    JLabel sameUsernameError = new JLabel();
 							    JLabel emptyUsernameError = new JLabel();
 							    JLabel warningLabel = new JLabel("<html>Spaces will be removed if included</html>");
 							    sameUsernameError.setBackground(Color.red);
 							    emptyUsernameError.setBackground(Color.red);
+//							    Adding the components
 							    p1.add(newUserLabel);
 							    p1.add(newUserTextField);
+							    p1.add(newUserPasswordField);
 							    p1.add(newUserButton);
 							    p1.add(warningLabel);
 							    // p2 components
+//							    radio buttons for existing users
 							    ButtonGroup bg = new ButtonGroup();
 							    for(Player player: players) {
 							    	JRadioButton rb = new JRadioButton(player.getName());
-							    	p2.add(rb);
+							    		p2.add(rb);
 							    	bg.add(rb);
 							    }
-							    JButton existingUserButton = new JButton("OK");
-							    p2.add(existingUserButton);
-							    JTabbedPane tp = new JTabbedPane(); 
-							    tp.setBounds(500 ,300 ,300,300);  
+//							    password field and button
+							    JPasswordField existingUserPasswordField = new JPasswordField("", 16);
+								existingUserPasswordField.setActionCommand("OK");
+								JButton existingUserButton = new JButton("OK");
+								if(players.size() == 0) {
+									sameUsernameError.setText("<html><font color='red'>No users exist</font></html>");
+									p2.add(sameUsernameError);
+								} else {
+									p2.add(existingUserPasswordField);
+									p2.add(existingUserButton);
+								}
+//								Adding panes to container
+							    JTabbedPane tp = new JTabbedPane();
+							    tp.setBounds(500 ,300 ,400,300);  
 							    tp.add("New User",p1);  
-							    tp.add("Existing User",p2);   
+							    tp.add("Existing User",p2);
 							    Board.this.add(tp);
 							    
+//							    If the user presses the button to register a new user
 							    newUserButton.addActionListener(new ActionListener() {
 
 									@Override
 									public void actionPerformed(ActionEvent e) {
+//										Removes all spaces
 										String usernameInput = newUserTextField.getText().replaceAll(" ", "");
-										if(usernameInput.equals("")) {
-											emptyUsernameError.setText("<html><font color='red'>Username cannot be an empty string!</font></html>");
+										String passwordInput = convertPasswordIntoString(newUserPasswordField.getPassword()).replaceAll(" ", "");
+//										Checks if empty
+										if(usernameInput.equals("") || passwordInput.equals("")) {
+											emptyUsernameError.setText("<html><font color='red'>Username or passoword cannot be an empty string!</font></html>");
 											p1.add(emptyUsernameError);
 										}
 										else if(!isUsernameExist(usernameInput)) {
 											p1.remove(emptyUsernameError);
-											addNewUsername(usernameInput);
-											updatePlayers();
+											addNewUsername(usernameInput, passwordInput);
+											initPlayers();
 											currentPlayer = findPlayer(usernameInput) != null ? findPlayer(usernameInput) : null;
 											loggedIn = true;
 											Board.this.remove(tp);
@@ -618,41 +731,43 @@ public class Board extends JPanel implements ActionListener{
 									}
 							    });
 							    
+//							    If the user presses the button to sign in as an existing user
 							    existingUserButton.addActionListener(new ActionListener() {
 
 									@Override
 									public void actionPerformed(ActionEvent e) {
-										if(bg.getSelection() != null) {
-											
+										String password = convertPasswordIntoString(existingUserPasswordField.getPassword()).replaceAll(" " , "");
+											if(bg.getSelection() != null) {
 											currentPlayer = findPlayer(getSelectedButtonText(bg));
+											if(currentPlayer.getPassword().equals(password) == true) {
 											loggedIn = true;
 											Board.this.remove(tp);
+											} else {
+												sameUsernameError.setText("<html><font color='red'>Password is incorrect</font></html>");
+												p2.add(sameUsernameError);
+												}
 										} else {
-											sameUsernameError.setText("<html><font color='red'>You have to pick one of the options!</font></html>");
+											sameUsernameError.setText("<html><font color='red'>User is not picked</font></html>");
 											p2.add(sameUsernameError);
 											}
 									}
-							    });
+									
+								});
+							    
+							  
 							} else { 
-								// User is now playing
-								userState = UserState.IN_GAME;
-								
-								// Creates a new bird thread for user to play with
-								bird = new Bird(590, 150);
-								bird.isAlive = true;
-								bird.start();
-								bird.jump();
-								
-								// Initialize pillars and timers and starts the game
-								initGame();
+//								User is picking a level
+								userState = UserState.LEVEL_SELECTION_PAGE;
 							}
-						} 
+						}
+//						Checks if the user pressed the log out button
 						Rectangle logOutBounds = new Rectangle(logOutButton.getXPosition(), logOutButton.getYPosition(), logOutButton.getButtonWidth(), logOutButton.getButtonHeight());
 						if(e.getButton() == MouseEvent.BUTTON1 && logOutBounds.contains(point)) {
 							loggedIn = false;
 							currentPlayer = null;
 						}
 					}
+//					If the user presses either the retry or main menu buttons
 					else if (userState == UserState.RETRY_PAGE) {
 						Point point = new Point(e.getX(), e.getY());
 						Rectangle retryImageBounds = new Rectangle(retryButton.getXPosition(), retryButton.getYPosition(), retryButton.getButtonWidth(), retryButton.getButtonHeight());
@@ -671,11 +786,44 @@ public class Board extends JPanel implements ActionListener{
 							userState = UserState.MAIN_MENU;
 							initMenu();
 						}
+//						If the user presses the mouse when in game then the bird jumps
 					} else if (userState == UserState.IN_GAME) {
 						bird.jump();
+//						If the user presses either of the levels
+					} else if(userState == UserState.LEVEL_SELECTION_PAGE) {
+						Point point = new Point(e.getX(), e.getY());
+						Rectangle level1Bounds = new Rectangle(level1.getXPosition(), level1.getYPosition(), level1.getButtonWidth(), level1.getButtonHeight());
+						Rectangle level2Bounds = new Rectangle(level2.getXPosition(), level2.getYPosition(), level2.getButtonWidth(), level2.getButtonHeight());
+						Rectangle level3Bounds = new Rectangle(level3.getXPosition(), level3.getYPosition(), level3.getButtonWidth(), level3.getButtonHeight());
+						boolean startGame = false;
+						if(e.getButton() == MouseEvent.BUTTON1 && level1Bounds.contains(point)) {
+							currentLevel = 1;
+							startGame = true;
+						} else if(e.getButton() == MouseEvent.BUTTON1 && level2Bounds.contains(point) && currentPlayer.getLevelsAvailable() >= 2) {
+							currentLevel = 2;
+							startGame = true;
+						} else if(e.getButton() == MouseEvent.BUTTON1 && level3Bounds.contains(point) && currentPlayer.getLevelsAvailable() >= 3) {
+							currentLevel = 3;
+							startGame = true;
+						}
+							
+							if(startGame == true) {
+//							User is now playing
+							userState = UserState.IN_GAME;
+							
+							// Creates a new bird thread for user to play with
+							bird = new Bird(590, 150);
+							bird.isAlive = true;
+							bird.start();
+							bird.jump();
+							
+							// Initialise pillars and timers and starts the game
+							initGame();
+							}
+						} 
 					}
-				}
 		
+//		Gets a username and and returns the player info if exists, otherwise null 
 		private Player findPlayer(String usernameInput) {
 			for(Player player: players) {
 				if(player.getName().equals(usernameInput))
@@ -684,6 +832,7 @@ public class Board extends JPanel implements ActionListener{
 			return null;
 		}
 
+//		Gets a username and returns if the username exists, otherwise false 
 		private boolean isUsernameExist(String usernameInput) {
 			for(Player player: players) {
 				if(player.getName().equals(usernameInput))
@@ -691,15 +840,25 @@ public class Board extends JPanel implements ActionListener{
 			}
 			return false;
 		}
+		
+//		Converts a array of chars into a string, used to convert a password
+		private String convertPasswordIntoString(char [] password) {
+			String stringPassword = "";
+			for(int i = 0; i < password.length; i++) {
+				stringPassword += password[i];
+			}
+			return stringPassword;
+		}
 
-		private void addNewUsername(String usernameInput) {
+//		Adds a new username to players.txt
+		private void addNewUsername(String usernameInput, String passwordInput) {
 			File file = new File("./Files/players.txt");
 			try {
 				Scanner sc = new Scanner(file);
 				FileWriter fw = new FileWriter(file, true);
 				if(Board.players.size() != 0)
 					fw.write("\n");
-				fw.write(usernameInput + " 0");
+				fw.write(usernameInput + " " + passwordInput + " 1 " + "0");
 				fw.close();
 				sc.close();
 			} catch (Exception e) {
@@ -707,6 +866,7 @@ public class Board extends JPanel implements ActionListener{
 			}
 		}
 		
+//		Returns the button text from a button group that is being used at the existing users pane tab
 		private String getSelectedButtonText(ButtonGroup bg) {
 			 for (Enumeration<AbstractButton> buttons = bg.getElements(); buttons.hasMoreElements();) {
 		            AbstractButton button = buttons.nextElement();
@@ -725,9 +885,11 @@ public class Board extends JPanel implements ActionListener{
 			// TODO Auto-generated method stub
 		}
 
+//		If the user presses 'P':
+//		1. If the user is in-game, the game is paused
+//		2. If the user is in pause page, the game is resumed
 		@Override
 		public void keyPressed(KeyEvent e) {
-			// TODO Auto-generated method stub
 			if(e.getKeyCode() == KeyEvent.VK_P) {
 				if(Board.userState == UserState.IN_GAME) {
 					pause();
@@ -743,6 +905,5 @@ public class Board extends JPanel implements ActionListener{
 		public void keyReleased(KeyEvent e) {
 			// TODO Auto-generated method stub
 		}
-		
 	}
 }

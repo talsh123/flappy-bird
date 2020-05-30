@@ -4,6 +4,8 @@ import java.awt.Graphics;
 import java.awt.Image;
 import javax.swing.ImageIcon;
 
+// This class contains the background image for the game
+// An ArrayList of background images is being used to imitate a looping background
 public class Background {
 	private static Image background;
 	private int xPosition, yPosition;
@@ -15,10 +17,12 @@ public class Background {
 		this.yPosition = yPosition;
 	}
 	
+//	Draws the background on the screen
 	public void drawBackground(Graphics g) {
 		g.drawImage(Background.background, this.xPosition, this.yPosition, null);
 	}
 	
+//	Moves the background 4 pixels to the left
 	public void move() {
 		this.xPosition -= 4;
 	}

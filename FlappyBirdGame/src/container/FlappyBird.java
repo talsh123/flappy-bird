@@ -28,6 +28,9 @@ public class FlappyBird extends JFrame{
 		this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 	}
  
+//	The main purpose of this class is to run the GUI (the frame in this case)
+//	from a different class in order to keep the GUI responsive in case some long calculations
+//	are happening within the EDT thread (Event Dispatching Thread)
 	public static void main(String[] args) {
 		EventQueue.invokeLater(() -> {
 			JFrame frame = new FlappyBird();

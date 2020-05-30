@@ -5,22 +5,37 @@ import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.concurrent.ThreadLocalRandom;
-
 import javax.swing.ImageIcon;
 
+// This class contains a Mine thread.
+// This thread dies when it leaves the screen.
 public class Mine extends Thread implements Runnable{
+//	X and Y position on screen
 	private int xPosition, yPosition, distance;
 	private Image mine;
+//	Mine dimensions
 	public final static int mineWidth = 50, mineHeight = 50;
+	
+//	Three stages for the THREAD:
+//	RUNNING - The thread is running from the point of creation (Thread.start())
+//	INTERRUPTED - The thread has been set the status of interrupted
+//	but it has not yet been Thread.interrupt(). I do this because the thread hasn't yet to
+//	leave the screen, and due to how the game is designed, only 2 mine threads need to be
+//	inside the ArrayList in order to be generated correctly.
+//	DEAD - The thread has actually been interrupted using Thread.interrupt().
+//	The thread has left the screen.
 	private static enum Status
 	{
 		RUNNING, DEAD, INTERRUPTED;
 	}
 	
+//	Status of the mine thread
 	private Status status;
 	
+//	Rectangle containing the mine, used to check if this mine is overlapping other coins
 	private Rectangle mineRect;
 	
+//	Left and right pillar
 	private PillarStructure leftPillar, rightPillar;
 	
 	public Mine(PillarStructure leftPillar, PillarStructure rightPillar) {
@@ -35,6 +50,9 @@ public class Mine extends Thread implements Runnable{
 		initMine();
 	}
 	
+//	This method generates a new Mine on the screen and randomises
+//	it's position to be between the left and right pillar
+//	all while checking it is not overlapping over other coins on the screen.
 	private void initMine() {
 		boolean initNewMine = false;
 		int lowestHeight = ((this.leftPillar.getBottomHeight() < this.rightPillar.getBottomHeight()) ? (720 - this.leftPillar.getBottomHeight() - Mine.mineHeight) : (720 - this.rightPillar.getBottomHeight() - Mine.mineHeight));
@@ -57,6 +75,8 @@ public class Mine extends Thread implements Runnable{
 		} while(initNewMine == true);
 	}
 	
+//	Checks if the current Mine is not overlapping other coins already generated.
+//	if false, creates a new mine
 	public boolean isOverlapping(Rectangle rect) {
 		Point l1 = new Point((int)this.mineRect.getX(), (int)this.mineRect.getY());
 		Point l2 = new Point((int)rect.getX(), (int)rect.getY());
@@ -83,6 +103,9 @@ public class Mine extends Thread implements Runnable{
 		this.mineRect = mineRect;
 	}
 
+//	The run() method of the Mine thread.
+//	This method updates the position of the mine
+//	accroding to it's status
 	public void run() {
 		try {
 			while(status == Status.RUNNING && !Thread.interrupted()) {
@@ -127,6 +150,7 @@ public class Mine extends Thread implements Runnable{
 			this.status = Status.DEAD;
 	}
 
+//	Draws the mine on screen.
 	public void drawMine(Graphics g) {
 		g.drawImage(this.mine, this.xPosition, this.yPosition, Mine.mineWidth, Mine.mineHeight, null);
 	}

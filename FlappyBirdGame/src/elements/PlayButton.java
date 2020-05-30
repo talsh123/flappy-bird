@@ -9,10 +9,12 @@ import java.io.IOException;
 import java.net.URL;
 import javax.swing.ImageIcon;
 
+// This class contains the play button on the main menu
 public class PlayButton {
 	
 	private int x,y;
 	private Image playButtonImage;
+//	Changes the floating animation direction
 	boolean changeAnimationDirection;
 	String startGameText = "Start Game";
 	public final static int playButtonWidth = 200, playButtonHeight = 200;
@@ -30,7 +32,7 @@ public class PlayButton {
 	public Font getFont() {
 		Font font = null;
 		try {
-			URL fontURL = new URL("file:./Fonts/PixalatedFont.ttf");
+			URL fontURL = new URL("file:./Fonts/PixalatedFont.TTF");
 			
 			font = Font.createFont(Font.TRUETYPE_FONT, fontURL.openStream());
 			font = font.deriveFont(Font.PLAIN, 65);
@@ -42,6 +44,7 @@ public class PlayButton {
 		return font;
 	}
 
+//	Moves the button and changes the animation direction accordingly
 	public void changeButtonPosition() {
 		if(!changeAnimationDirection) {
 			this.y++;
@@ -55,6 +58,7 @@ public class PlayButton {
 			changeAnimationDirection = false;
 	}
 	
+//	Draws the button on screen
 	public void drawPlayButton(Graphics g) {
 		g.drawImage(this.playButtonImage, this.x, this.y, PlayButton.playButtonWidth, PlayButton.playButtonHeight, null);
 		g.setFont(getFont());
