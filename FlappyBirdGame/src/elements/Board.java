@@ -89,7 +89,7 @@ public class Board extends JPanel{
 	public static Rectangle groundRect;
 	public static Rectangle skyRect;
 	
-	// Timers in use, neccessary for game functionality
+	// Timers in use, necessary for game functionality
 	private Timer collisionTimer; // Timer for checking collisions
 	private Timer playButtonTimer; // play Button timer hovering animation
 	private Timer backgroundChangeTimer; // Looping backgroundTimer
@@ -146,7 +146,7 @@ public class Board extends JPanel{
 //	Initialises all timers used in game
 	private void initTimers() {
 		// Timer used for hovering animation for Play Button
-		this.playButtonTimer = new Timer(50, new ActionListener() {
+		this.playButtonTimer = new Timer(1, new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -156,7 +156,7 @@ public class Board extends JPanel{
 		playButtonTimer.setInitialDelay(0);
 		
 		// Timer to loop the same background Image
-		this.backgroundChangeTimer = new Timer(20, new ActionListener() {
+		this.backgroundChangeTimer = new Timer(1, new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -171,7 +171,7 @@ public class Board extends JPanel{
 		backgroundChangeTimer.setInitialDelay(0);
 		
 		// Timer to create a looping pillars 
-		this.pillarTimer = new Timer(20, new ActionListener() {
+		this.pillarTimer = new Timer(1, new ActionListener() {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -304,7 +304,7 @@ public class Board extends JPanel{
 		pillarTimer.setInitialDelay(0);
 	}
 	
-//	Initialises/Updates written information over existing players in players.txt
+//	Initializes updates written information over existing players in players.txt
 	private void initPlayers() {
 		currentPlayer = null;
 		Board.players.clear();
@@ -316,8 +316,6 @@ public class Board extends JPanel{
 				Board.players.add(new Player(playerInfo[0], playerInfo[1], Integer.parseInt(playerInfo[2]), Integer.parseInt(playerInfo[3])));
 			}
 			sc.close();
-			System.out.println(players.size());
-			System.out.println();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -494,10 +492,7 @@ public class Board extends JPanel{
 //			If the user has completed the level before, the user keeps playing and the game doesn't stop
 		} else if(currentScore >= scoreToUnlockLevel && currentPlayer.getLevelsAvailable() < 3) {
 			if(currentPlayer.getLevelsAvailable() == Board.currentLevel && currentPlayer.getLevelsAvailable() <= 2) {
-				stopGame();
 				currentPlayer.updateLevelsAvailable();	
-				currentScore = 0;
-				userState = UserState.LEVEL_SELECTION_PAGE;
 			}
 		}
 	}
@@ -506,6 +501,7 @@ public class Board extends JPanel{
 //	This method divides to multiple drawing method depending on userState
 	@Override
 	public void paintComponent(Graphics g) {
+		super.paintComponent(g);
 		switch(userState) {
 		case IN_GAME:
 			//Drawing when use is playing the game
@@ -533,13 +529,12 @@ public class Board extends JPanel{
 //	Draws level selection page
 	public void drawLevelSelectionPage(Graphics g) {
 //		Draws level selection page
-		super.paintComponent(g);
 		g.drawImage(backgroundImage, 0, 0, null);
 		g.setFont(getFont().deriveFont(Font.PLAIN, 40));
 		if(currentPlayer.getLevelsAvailable() != 3)
 			g.drawString("Reach  score  " + Board.scoreToUnlockLevel + "  to  unlock  the  next  level!", 300, 50);
 		else
-			g.drawString("All  levels  unlocked!", 300, 50);
+			g.drawString("All  levels  unlocked!", 450, 50);
 //		Level 0 is accessible to every user
 		Board.level1.drawUnpressedButton(g, 500, 100);
 		switch (currentPlayer.getLevelsAvailable()) {
@@ -598,8 +593,9 @@ public class Board extends JPanel{
 					coin.drawCoin(g);
 				}
 		
-		g.drawString(String.valueOf(Board.currentScore), 590, 130);
-		
+		g.drawString(String.valueOf(Board.currentScore), 600, 130);
+		g.setFont(getFont().deriveFont(Font.PLAIN, 30));
+		g.drawString("High  Score  " + Board.currentPlayer.getHighestScore(), 50, 50);
 		bird.drawBird(g);
 	}
 	
@@ -607,7 +603,6 @@ public class Board extends JPanel{
 	private void drawMainMenu(Graphics g) {
 		// Draws the background image, game name, bird and the play button
 		g.drawImage(this.backgroundImage, 0, 0, 1280, 720, this);
-		g.setFont(getFont());
 		g.drawString("FLAPPY BIRD", 220, 120); // 220 120
 		bird.drawBird(g, 590, 150);
 		Board.playButton.drawPlayButton(g);
@@ -817,7 +812,7 @@ public class Board extends JPanel{
 							bird.start();
 							bird.jump();
 							
-							// Initialise pillars and timers and starts the game
+							// Initialize pillars and timers and starts the game
 							initGame();
 							}
 						} 
@@ -882,7 +877,6 @@ public class Board extends JPanel{
 
 		@Override
 		public void keyTyped(KeyEvent e) {
-			// TODO Auto-generated method stub
 		}
 
 //		If the user presses 'P':
@@ -898,12 +892,13 @@ public class Board extends JPanel{
 					userState = UserState.IN_GAME;
 					resume();
 				}
+			} else if(e.getKeyCode() == KeyEvent.VK_SPACE && Board.userState == UserState.IN_GAME) {
+				bird.jump();
 			}
 		}
 
 		@Override
 		public void keyReleased(KeyEvent e) {
-			// TODO Auto-generated method stub
 		}
 	}
 }
